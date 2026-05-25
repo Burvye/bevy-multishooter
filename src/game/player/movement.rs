@@ -5,9 +5,8 @@ use super::components::{GroundProbe, Player, PlayerController, PlayerInput, Play
 
 #[derive(Resource, Debug, Clone)]
 pub struct PlayerStats {
-    pub ground_accel: Scalar,
-    pub air_accel: Scalar,
-    pub ground_speed: Scalar,
+    pub accel: Scalar,
+    pub speed: Scalar,
     pub jump_speed: Scalar,
     pub gravity: Vector,
     pub fall_speed: Scalar,
@@ -17,9 +16,8 @@ pub struct PlayerStats {
 impl Default for PlayerStats {
     fn default() -> Self {
         Self {
-            ground_accel: 90.0,
-            air_accel: 30.0,
-            ground_speed: 8.0,
+            accel: 90.0,
+            speed: 8.0,
             jump_speed: 7.5,
             gravity: Vector::new(0.0, -30.0, 0.0),
             fall_speed: 40.0,
@@ -75,18 +73,14 @@ pub fn apply_horizontal_input(
     for (input, mov_state, mut vel) in &mut players {
         let dir_desired =
             Vector3::new(input.move_dir.x, 0.0, -input.move_dir.y).clamp_length_max(1.0);
-        let accel = if mov_state.grounded {
-            config.ground_accel
-        } else {
-            config.air_accel
-        };
+        let accel = config.accel;
 
         vel.x += dir_desired.x * accel * d_secs;
         vel.z += dir_desired.z * accel * d_secs;
 
         let hoz_speed = Vector2::new(vel.x, vel.z);
         // clamp the horizontal speed
-        let hoz_speed = hoz_speed.clamp_length_max(config.ground_speed);
+        let hoz_speed = hoz_speed.clamp_length_max(config.speed);
         vel.x = hoz_speed.x;
         vel.z = hoz_speed.y;
     }

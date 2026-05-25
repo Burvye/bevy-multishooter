@@ -1,0 +1,13 @@
+check things off when complete!
+Character Controller:
+- Basic WASD movement
+- Camera movement
+- Jumping with grounded detection
+- Sliding along surfaces
+- Limit climbing slope
+Multiplayer:
+- Packet info:
+{
+Position
+Looking direction
+}

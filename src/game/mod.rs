@@ -1,3 +1,4 @@
+pub mod player;
 pub mod schedule;
 
 use avian3d::prelude::*;
@@ -9,12 +10,12 @@ pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        let simulation_config = SimConfig::default();
+        let sim_config = SimConfig::default();
 
-        app.insert_resource(Time::<Fixed>::from_hz(simulation_config.tps))
-            .insert_resource(simulation_config)
+        app.insert_resource(Time::<Fixed>::from_hz(sim_config.tps))
+            .insert_resource(sim_config)
             .insert_resource(SimTick::default())
-            .add_plugins(PhysicsPlugins::default())
+            .add_plugins((PhysicsPlugins::default(), player::PlayerPlugin))
             .add_systems(Startup, schedule::configure_tps)
             .add_systems(FixedUpdate, schedule::tick_sim);
     }

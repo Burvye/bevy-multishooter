@@ -1,10 +1,13 @@
+pub mod presentation;
+
 use bevy::{
     input::mouse::AccumulatedMouseMotion,
     prelude::*,
     window::{CursorGrabMode, CursorOptions},
 };
 
-use crate::game::player::components::{Input, LCamAnchor, LocalPlayer, LookState, VisRoot};
+use crate::game::player::components::{Input, LocalPlayer, LookState};
+use presentation::PresentationPlugin;
 
 pub struct ClientPlugin;
 
@@ -12,18 +15,15 @@ impl Plugin for ClientPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, configure_window_for_mouse_look)
             .add_systems(Startup, spawn_debug_light)
+            .add_plugins(PresentationPlugin)
             // TODO: replace the offline keyboard detection with
             // general local input detection to fit into the
             // multiplayer and PlayerInput system
             .add_systems(PreUpdate, capture_client_input)
             // camera looking is not updated based on fixed tick for smoothness
-            .add_systems(PreUpdate, capture_local_look_input)
-            .add_systems(Update, sync_local_player_visuals);
+            .add_systems(PreUpdate, capture_local_look_input);
     }
 }
-
-#[derive(Component)]
-pub struct PlayerCamera;
 
 fn configure_window_for_mouse_look(mut cursor_options: Single<&mut CursorOptions>) {
     cursor_options.visible = false;
@@ -78,31 +78,4 @@ fn capture_local_look_input(
     player_look.yaw -= mouse_motion.delta.x * MOUSE_SENSITIVITY;
     player_look.pitch =
         (player_look.pitch - mouse_motion.delta.y * MOUSE_SENSITIVITY).clamp(-1.57, 1.57);
-}
-
-fn sync_local_player_visuals(
-    local_player: Single<(&LookState, &Children), With<LocalPlayer>>,
-    children_query: Query<&Children>,
-    mut visual_root_query: Query<&mut Transform, With<VisRoot>>,
-    mut camera_anchor_query: Query<&mut Transform, (With<LCamAnchor>, Without<VisRoot>)>,
-) {
-    let (look, children) = *local_player;
-
-    for child in children.iter() {
-        if let Ok(mut visual_root_transform) = visual_root_query.get_mut(child) {
-            // yaw rotation is visible and affects movement input
-            // pitch affects only the camera and is lower in hierarchy
-            visual_root_transform.rotation = Quat::from_rotation_y(look.yaw);
-        }
-
-        if let Ok(visual_root_children) = children_query.get(child) {
-            for visual_root_child in visual_root_children.iter() {
-                if let Ok(mut camera_anchor_transform) =
-                    camera_anchor_query.get_mut(visual_root_child)
-                {
-                    camera_anchor_transform.rotation = Quat::from_rotation_x(look.pitch);
-                }
-            }
-        }
-    }
 }

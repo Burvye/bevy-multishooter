@@ -2,17 +2,14 @@ use avian3d::prelude::*;
 use bevy::prelude::*;
 
 use super::components as player;
-use crate::client::PlayerCamera;
 
-pub fn spawn_test_player(
-    mut cmds: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
+pub fn spawn_test_player(mut cmds: Commands) {
     let player_body = player::Body::default();
 
-    // TODO: replace the default capsule with a
-    // structure that can handle custom rigged models
+    // FUTURE: keep spawning simulation only, model scenes,
+    // camera ownership and visuals should be in the client
+    // presentation files so they can change without changing
+    // gameplay
     cmds.spawn((
         Name::new("TestPlayer"),
         player::Player,
@@ -36,26 +33,11 @@ pub fn spawn_test_player(
             ))
             .with_children(|visual_root| {
                 visual_root.spawn((
-                    Name::new("PlayerDebugBody"),
-                    Mesh3d(meshes.add(Capsule3d::new(player_body.radius, player_body.height))),
-                    MeshMaterial3d(materials.add(Color::srgb(1.0, 0.0, 0.0))),
-                    Transform::IDENTITY,
+                    Name::new("PlayerCameraAnchor"),
+                    player::CamAnchor,
+                    player::LCamAnchor,
+                    Transform::from_xyz(0.0, player_body.eye_height, 0.0),
                 ));
-
-                visual_root
-                    .spawn((
-                        Name::new("PlayerCameraAnchor"),
-                        player::CamAnchor,
-                        player::LCamAnchor,
-                        Transform::from_xyz(0.0, player_body.eye_height, 0.0),
-                    ))
-                    .with_children(|camera_anchor| {
-                        camera_anchor.spawn((
-                            PlayerCamera,
-                            Camera3d::default(),
-                            Transform::from_xyz(0.0, 0.0, 0.0).looking_at(Vec3::NEG_Z, Vec3::Y),
-                        ));
-                    });
             });
     });
 }

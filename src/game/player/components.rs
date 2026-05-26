@@ -4,25 +4,28 @@ use bevy::prelude::*;
 #[derive(Component)]
 pub struct Player;
 
+#[derive(Component)]
+pub struct LocalPlayer;
+
 #[derive(Component, Debug, Clone, Copy)]
-pub struct PlayerBody {
+pub struct Body {
     pub radius: f32,
     pub height: f32,
     pub eye_height: f32,
 }
 
-impl Default for PlayerBody {
+impl Default for Body {
     fn default() -> Self {
         Self {
             radius: 0.75,
             height: 2.0,
-            eye_height: 1.8,
+            eye_height: 1.75,
         }
     }
 }
 
 #[derive(Component, Debug, Default, Clone, Copy)]
-pub struct PlayerInput {
+pub struct Input {
     /// directional input via WASD or arrow keys
     pub move_dir: Vec2,
     /// jump input
@@ -47,9 +50,33 @@ impl Default for GroundProbe {
 }
 
 #[derive(Component, Debug, Default, Clone, Copy)]
-pub struct PlayerMovementState {
+pub struct MoveState {
     pub grounded: bool,
 }
+
+#[derive(Component, Debug, Clone, Copy)]
+pub struct LookState {
+    pub yaw: f32,
+    pub pitch: f32,
+}
+
+impl Default for LookState {
+    fn default() -> Self {
+        Self {
+            yaw: 0.0,
+            pitch: 0.0,
+        }
+    }
+}
+
+#[derive(Component)]
+pub struct VisRoot;
+
+#[derive(Component)]
+pub struct CamAnchor;
+
+#[derive(Component)]
+pub struct LCamAnchor;
 
 #[derive(Component, Default)]
 #[require(
@@ -63,4 +90,4 @@ pub struct PlayerMovementState {
     SpeculativeMargin(0.0),
     LinearVelocity::ZERO
 )]
-pub struct PlayerController;
+pub struct Controller;

@@ -1,7 +1,8 @@
+use super::schedule;
 use avian3d::{math::*, prelude::*};
 use bevy::prelude::*;
 
-use super::components::{GroundProbe, Player, PlayerController, PlayerInput, PlayerMovementState};
+use super::components as player;
 
 #[derive(Resource, Debug, Clone)]
 pub struct PlayerStats {
@@ -31,12 +32,12 @@ pub fn update_grounded_state(
     mut players: Query<
         (
             Entity,
-            &GroundProbe,
+            &player::GroundProbe,
             &GlobalTransform,
-            &mut PlayerMovementState,
+            &mut player::MoveState,
             &Collider,
         ),
-        With<Player>,
+        With<player::Player>,
     >,
     spatial_query: SpatialQuery,
 ) {
@@ -62,21 +63,21 @@ pub fn update_grounded_state(
 }
 
 pub fn apply_horizontal_input(
-    time: Res<Time>,
     config: Res<PlayerStats>,
-    mut players: Query<(&PlayerInput, &PlayerMovementState, &mut LinearVelocity), With<Player>>,
+    mut players: Query<
+        (&player::Input, &player::LookState, &mut LinearVelocity),
+        With<player::Player>,
+    >,
+    delta_time: Res<schedule::DeltaTime>,
 ) {
-    // TODO: extract fixed tick time change into a function
-    // once controller math is stable
-    let d_secs = time.delta_secs_f64().adjust_precision();
+    for (input, look, mut vel) in &mut players {
+        // movement interpreted from yaw, the controller gives
+        // all the states so we dont depend on stuff like the
+        // camera here
+        let dir_desired = Quat::from_rotation_y(look.yaw) * local_input(input);
 
-    for (input, mov_state, mut vel) in &mut players {
-        let dir_desired =
-            Vector3::new(input.move_dir.x, 0.0, -input.move_dir.y).clamp_length_max(1.0);
-        let accel = config.accel;
-
-        vel.x += dir_desired.x * accel * d_secs;
-        vel.z += dir_desired.z * accel * d_secs;
+        vel.x += dir_desired.x * config.accel * delta_time.dt;
+        vel.z += dir_desired.z * config.accel * delta_time.dt;
 
         let hoz_speed = Vector2::new(vel.x, vel.z);
         // clamp the horizontal speed
@@ -85,10 +86,17 @@ pub fn apply_horizontal_input(
         vel.z = hoz_speed.y;
     }
 }
+/// simple function that expands into a local input vector from player input without variables
+fn local_input(input: &player::Input) -> Vector3 {
+    Vector3::new(input.move_dir.x, 0.0, -input.move_dir.y).clamp_length_max(1.0)
+}
 
 pub fn apply_jump(
     config: Res<PlayerStats>,
-    mut players: Query<(&PlayerInput, &mut PlayerMovementState, &mut LinearVelocity), With<Player>>,
+    mut players: Query<
+        (&player::Input, &mut player::MoveState, &mut LinearVelocity),
+        With<player::Player>,
+    >,
 ) {
     for (input, mut mov_state, mut vel) in &mut players {
         if input.jump_pressed && mov_state.grounded {
@@ -100,9 +108,9 @@ pub fn apply_jump(
 
 /// Applying gravity with consideration for custom gravity direction
 pub fn apply_gravity(
-    time: Res<Time>,
+    delta_time: Res<schedule::DeltaTime>,
     config: Res<PlayerStats>,
-    mut players: Query<(&PlayerMovementState, &mut LinearVelocity), With<Player>>,
+    mut players: Query<(&player::MoveState, &mut LinearVelocity), With<player::Player>>,
 ) {
     // TODO: if gravity direction becomes configurable per entity
     // move this logic out of the shared player state and
@@ -110,7 +118,6 @@ pub fn apply_gravity(
     // README: the direction of gravity
     // is not automatically assumed to
     // be in the Y direction!
-    let d_secs = time.delta_secs_f64().adjust_precision();
     let grav_dir = config.gravity.normalize_or_zero();
 
     for (mov_state, mut vel) in &mut players {
@@ -128,7 +135,7 @@ pub fn apply_gravity(
         }
 
         // velocity if we applied gravitational acceleration for d_secs
-        let new_vel = vel.0 + config.gravity * d_secs;
+        let new_vel = vel.0 + config.gravity * delta_time.dt;
         // the gravity direction component of the new velocity
         let new_vel_on_grav = new_vel.dot(grav_dir);
 
@@ -143,13 +150,12 @@ pub fn apply_gravity(
 }
 
 pub fn apply_horizontal_damping(
-    time: Res<Time>,
+    delta_time: Res<schedule::DeltaTime>,
     config: Res<PlayerStats>,
-    mut players: Query<&mut LinearVelocity, With<Player>>,
+    mut players: Query<&mut LinearVelocity, With<player::Player>>,
 ) {
-    let d_secs = time.delta_secs_f64().adjust_precision();
     // something less than 1
-    let damping_factor = 1.0 / (1.0 + d_secs * config.horizontal_damping);
+    let damping_factor = 1.0 / (1.0 + delta_time.dt * config.horizontal_damping);
 
     for mut vel in &mut players {
         vel.x *= damping_factor;
@@ -163,7 +169,7 @@ pub fn move_player_body(
     move_and_slide: MoveAndSlide,
     mut players: Query<
         (Entity, &Collider, &mut Transform, &mut LinearVelocity),
-        With<PlayerController>,
+        With<player::Controller>,
     >,
 ) {
     for (player, collider, mut transform, mut vel) in &mut players {

@@ -11,9 +11,16 @@ pub struct PlayerCamera;
 #[derive(Component)]
 pub struct ModelRoot;
 
+/// Presentation means immediately player
+/// visible things that are displayed
+/// PresentationBound here just binds things to
+/// the visual root. Like camerabound below.
 #[derive(Component, Default)]
 pub struct PresentationBound;
 
+/// Prevents bind_local_camera_to_anchor from binding
+/// the camera to the player repeatedly, it is a flag
+/// that is used just once, not related to presentation
 #[derive(Component, Default)]
 pub struct CameraBound;
 

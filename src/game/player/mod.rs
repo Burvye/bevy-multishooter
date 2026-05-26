@@ -6,7 +6,6 @@ pub mod spawn;
 use bevy::prelude::*;
 
 use self::movement as player_movement;
-use super::schedule;
 
 pub struct PlayerPlugin;
 
@@ -17,7 +16,6 @@ impl Plugin for PlayerPlugin {
             .add_systems(
                 FixedUpdate,
                 (
-                    schedule::update_delta_time,
                     movement::update_grounded_state,
                     movement::apply_horizontal_input,
                     movement::apply_horizontal_damping,

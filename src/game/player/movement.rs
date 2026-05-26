@@ -1,4 +1,4 @@
-use super::schedule;
+use crate::game::schedule;
 use avian3d::{math::*, prelude::*};
 use bevy::prelude::*;
 

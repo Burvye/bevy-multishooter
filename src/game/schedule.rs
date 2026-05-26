@@ -1,4 +1,4 @@
-use avian3d::{math::*, prelude::*};
+use avian3d::math::*;
 use bevy::prelude::*;
 
 #[derive(Resource, Debug, Clone)]
